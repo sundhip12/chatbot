@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LMS ChatBot — Train</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="nav-icon">📚</span>
+      <span class="nav-title">LMS ChatBot</span>
+    </div>
+    <div class="nav-links">
+      <a href="/train" class="nav-link active">Train</a>
+      <a href="/chat" class="nav-link">Chat</a>
+    </div>
+  </nav>
+
+  <div class="page-wrapper">
+
+    <div class="page-header">
+      <h1 class="page-title">Document Training</h1>
+      <p class="page-subtitle">Upload your LMS documents to build the knowledge base</p>
+    </div>
+
+    <div class="two-col">
+
+      <!-- Upload Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">⬆️</span>
+          <h2 class="card-title">Upload Document</h2>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-icon">📄</div>
+          <p class="drop-text">Drag and drop your document here</p>
+          <p class="drop-sub">or</p>
+          <label class="btn-primary" for="fileInput">Browse File</label>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" hidden/>
+        </div>
+
+        <div class="selected-file" id="selectedFile" style="display:none">
+          <span class="file-icon">📎</span>
+          <span class="file-name" id="fileName"></span>
+        </div>
+
+        <button class="btn-train" id="trainBtn" disabled>
+          <span id="trainBtnText">Train Document</span>
+        </button>
+
+        <div class="progress-wrap" id="progressWrap" style="display:none">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <p class="progress-label" id="progressLabel">Processing...</p>
+        </div>
+
+        <div class="result-box" id="resultBox" style="display:none"></div>
+      </div>
+
+      <!-- Train From Text -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">✍️</span>
+          <h2 class="card-title">Train from Text</h2>
+        </div>
+
+        <textarea
+          id="manualText"
+          rows="8"
+          placeholder="Paste text, notes, policies, LMS content, or any information here..."
+          style="width:100%; padding:12px; border-radius:10px; margin-bottom:15px;"></textarea>
+
+        <button class="btn-train" id="trainTextBtn">Train Text</button>
+
+        <!-- Result box for text training feedback -->
+        <div class="result-box" id="trainTextResult" style="display:none"></div>
+      </div>
+
+      <!-- Trained Documents -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">🗂️</span>
+          <h2 class="card-title">Trained Documents</h2>
+        </div>
+
+        {% if docs %}
+          <ul class="doc-list">
+            {% for doc in docs %}
+            <li class="doc-item">
+              <span class="doc-icon">✅</span>
+              <span class="doc-name">{{ doc }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="empty-state">
+            <p>No documents trained yet.</p>
+            <p>Upload a document to get started.</p>
+          </div>
+        {% endif %}
+
+        <button class="btn-reset" id="resetBtn">🗑 Clear All Documents</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

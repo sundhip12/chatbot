@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LMS ChatBot — Chat</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <span class="nav-icon">📚</span>
+      <span class="nav-title">LMS ChatBot</span>
+    </div>
+    <div class="nav-links">
+      <a href="/train" class="nav-link">Train</a>
+      <a href="/chat" class="nav-link active">Chat</a>
+      <span class="doc-badge">{{ doc_count }} doc{{ 's' if doc_count != 1 else '' }}</span>
+    </div>
+  </nav>
+
+  <div class="chat-wrapper">
+
+    <!-- Chat Window -->
+    <div class="chat-window" id="chatWindow">
+
+      <!-- Welcome message -->
+      <div class="message bot-message">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <p>Hello! I am your LMS assistant. Ask me anything about your uploaded documents.</p>
+          <p class="message-hint">If I cannot find the answer, I will direct you to academic support.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Input Area -->
+    <div class="chat-input-area">
+      <div class="input-wrap">
+        <input
+          type="text"
+          id="questionInput"
+          class="chat-input"
+          placeholder="Ask a question about your documents..."
+          autocomplete="off"
+        />
+        <button class="btn-send" id="sendBtn">
+          <span>Send</span>
+          <span class="send-icon">➤</span>
+        </button>
+      </div>
+      <p class="input-hint">Answers are retrieved directly from your uploaded documents</p>
+    </div>
+
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
