@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>LMS ChatBot — Train</title>
   <link rel="stylesheet" href="/static/style.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  <script>
+    // Prevent flash of wrong theme
+    (function() {
+      const t = localStorage.getItem('lms_theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
 
@@ -18,6 +26,10 @@
     <div class="nav-links">
       <a href="/train" class="nav-link active">Train</a>
       <a href="/chat" class="nav-link">Chat</a>
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark/light mode">
+        <span class="toggle-icon">🌙</span>
+        <span class="toggle-label">Dark</span>
+      </button>
     </div>
   </nav>
 
@@ -25,7 +37,7 @@
 
     <div class="page-header">
       <h1 class="page-title">Document Training</h1>
-      <p class="page-subtitle">Upload your LMS documents to build the knowledge base</p>
+      <p class="page-subtitle">Upload documents or paste text to build your semantic knowledge base</p>
     </div>
 
     <div class="two-col">
@@ -46,7 +58,7 @@
         </div>
 
         <div class="selected-file" id="selectedFile" style="display:none">
-          <span class="file-icon">📎</span>
+          <span>📎</span>
           <span class="file-name" id="fileName"></span>
         </div>
 
@@ -58,7 +70,7 @@
           <div class="progress-bar">
             <div class="progress-fill" id="progressFill"></div>
           </div>
-          <p class="progress-label" id="progressLabel">Processing...</p>
+          <p class="progress-label" id="progressLabel">Processing…</p>
         </div>
 
         <div class="result-box" id="resultBox" style="display:none"></div>
@@ -71,15 +83,17 @@
           <h2 class="card-title">Train from Text</h2>
         </div>
 
-        <textarea
-          id="manualText"
-          rows="8"
-          placeholder="Paste text, notes, policies, LMS content, or any information here..."
-          style="width:100%; padding:12px; border-radius:10px; margin-bottom:15px;"></textarea>
+        <div class="textarea-wrap">
+          <textarea
+            id="manualText"
+            class="train-textarea"
+            rows="9"
+            placeholder="Paste notes, policies, LMS content, FAQs, or any text here…"
+          ></textarea>
+        </div>
 
         <button class="btn-train" id="trainTextBtn">Train Text</button>
 
-        <!-- Result box for text training feedback -->
         <div class="result-box" id="trainTextResult" style="display:none"></div>
       </div>
 
@@ -93,16 +107,23 @@
         {% if docs %}
           <ul class="doc-list">
             {% for doc in docs %}
-            <li class="doc-item">
-              <span class="doc-icon">✅</span>
+            <li class="doc-item" data-doc-name="{{ doc }}">
+              <span>✅</span>
               <span class="doc-name">{{ doc }}</span>
+              <!-- Delete single document -->
+              <button class="btn-doc-delete" title="Delete this document">🗑</button>
+              <div class="doc-delete-confirm">
+                <span style="font-size:0.76rem;color:var(--text-muted)">Remove?</span>
+                <button class="btn-confirm-yes">Yes</button>
+                <button class="btn-confirm-no">No</button>
+              </div>
             </li>
             {% endfor %}
           </ul>
         {% else %}
           <div class="empty-state">
-            <p>No documents trained yet.</p>
-            <p>Upload a document to get started.</p>
+            <p>📭 No documents trained yet.</p>
+            <p>Upload a file or paste text to get started.</p>
           </div>
         {% endif %}
 
