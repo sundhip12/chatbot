@@ -460,6 +460,12 @@ body {
   flex: 1;
 }
 
+/* ── Individual doc summarize button — hidden (summarize via chat) ── */
+.btn-summarize,
+.btn-summarize-all {
+  display: none !important;
+}
+
 /* ── Individual doc delete button ── */
 .btn-doc-delete {
   background: transparent;
@@ -1018,6 +1024,166 @@ body {
 .two-col .card:nth-child(1) { animation-delay: 0.05s; }
 .two-col .card:nth-child(2) { animation-delay: 0.12s; }
 .two-col .card:nth-child(3) { animation-delay: 0.19s; }
+
+/* ── Stop Button ── */
+.btn-stop {
+  padding: 11px 18px;
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: 99px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  animation: fadeSlideUp 0.2s ease both;
+}
+
+.btn-stop:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(192,57,43,0.3);
+}
+
+/* ── Individual doc summarize button ── */
+.btn-summarize:not(.btn-summarize-all) {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+.doc-item:hover .btn-summarize:not(.btn-summarize-all) {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn-summarize:not(.btn-summarize-all):hover {
+  background: var(--accent);
+  border-color: var(--primary-lt);
+  color: var(--primary);
+}
+
+/* ── Summarize All button ── */
+.btn-summarize-all {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 10px;
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary-lt);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.btn-summarize-all:hover { background: var(--accent); }
+
+/* ── Summary Panel ── */
+.summary-panel {
+  margin-top: 1rem;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  animation: slideDown 0.25s ease;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.summary-loading { color: var(--text-muted); font-style: italic; }
+
+.summary-header {
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-badge {
+  background: var(--accent);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.summary-body {
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.summary-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 0.76rem;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.summary-close:hover { background: var(--danger-lt); color: var(--danger); border-color: var(--danger); }
+
+/* ── Message Timestamp ── */
+.message-time {
+  font-size: 0.72rem;
+  color: var(--text-sub);
+  padding: 0 4px;
+  margin-top: 2px;
+}
+
+.user-message .message-time { text-align: right; }
+
+/* ── Bot answer bubble (plain, no compartment) ── */
+.bot-answer-bubble {
+  background: var(--bot-bubble);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  border-top-left-radius: 4px;
+  padding: 13px 16px;
+  box-shadow: var(--shadow);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.bot-answer-bubble strong { font-weight: 600; color: var(--primary); }
+.bot-answer-bubble em { font-style: italic; color: var(--text-muted); }
+.bot-answer-bubble code {
+  background: var(--bg2);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-family: 'JetBrains Mono', monospace;
+}
 
 /* ── Mobile tweaks ── */
 @media (max-width: 600px) {

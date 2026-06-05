@@ -48,73 +48,23 @@ function showToast(msg) {
 
 function renderMarkdown(text) {
   if (!text) return "";
-
-  let html = "";
-  const lines = text.split("\n");
-  let i = 0;
-  let inCode = false;
-  let codeLang = "";
-  let codeLines = [];
-  let paraLines = [];
-
-  function flushPara() {
-    if (!paraLines.length) return;
-    let block = paraLines.join("\n")
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/^\d+\.\s+(.+)$/gm, "<li>$1</li>")
-      .replace(/^[-•]\s+(.+)$/gm, "<li>$1</li>")
-      .replace(/(<li>.*<\/li>)/gs, m => `<ul style="margin:6px 0 6px 18px;line-height:1.7">${m}</ul>`)
-      .replace(/\n{2,}/g, "</p><p style='margin-top:8px'>")
-      .replace(/\n/g, "<br>");
-    html += `<p style="margin:0 0 6px">${block}</p>`;
-    paraLines = [];
-  }
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    if (!inCode && /^```/.test(line)) {
-      flushPara();
-      codeLang = line.replace(/^```/, "").trim() || "plaintext";
-      codeLines = [];
-      inCode = true;
-      i++;
-      continue;
-    }
-
-    if (inCode) {
-      if (/^```/.test(line)) {
-        const langLabel = codeLang !== "plaintext"
-          ? `<span style="font-size:0.75em;color:var(--text-muted);font-family:var(--font-mono)">${escapeHtml(codeLang)}</span>`
-          : "";
-        html += `
-          <div style="margin:8px 0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden">
-            ${langLabel ? `<div style="padding:4px 12px;border-bottom:1px solid var(--border)">${langLabel}</div>` : ""}
-            <pre style="margin:0;padding:10px 14px;overflow-x:auto;font-family:monospace;font-size:0.83rem;line-height:1.6"><code>${escapeHtml(codeLines.join("\n"))}</code></pre>
-          </div>`;
-        inCode = false;
-        codeLines = [];
-      } else {
-        codeLines.push(line);
-      }
-      i++;
-      continue;
-    }
-
-    paraLines.push(line);
-    i++;
-  }
-
-  // flush any unclosed code block (streaming mid-block)
-  if (inCode && codeLines.length) {
-    html += `<pre style="margin:8px 0;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow-x:auto;font-family:monospace;font-size:0.83rem;line-height:1.6"><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`;
-  }
-
-  flushPara();
-  return html;
+  const html = text
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/^\d+\.\s+(.+)$/gm, "<li>$1</li>")
+    .replace(/^[-•]\s+(.+)$/gm, "<li>$1</li>")
+    .replace(/(<li>.*?<\/li>\n?)+/g, m => `<ul style="margin:5px 0 5px 18px;line-height:1.7">${m}</ul>`)
+    .replace(/\n{2,}/g, " ")
+    .replace(/\n/g, " ");
+  return `<p style="margin:0;line-height:1.7">${html}</p>`;
 }
+
+function getTimestamp() {
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -250,7 +200,53 @@ if (dropZone) {
   }
 }
 
-// ── Per-document delete ───────────────────────────────────
+// ── Summarize Document ────────────────────────────────────
+
+document.querySelectorAll(".btn-summarize").forEach(btn => {
+  btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const filename = btn.dataset.filename || "";
+    const label    = filename || "all documents";
+
+    btn.textContent = "⏳";
+    btn.disabled    = true;
+
+    // Find or create summary panel below the doc item / below the card header
+    const container = btn.closest(".card") || btn.closest(".doc-item");
+    let summaryPanel = container.querySelector(".summary-panel");
+    if (!summaryPanel) {
+      summaryPanel = document.createElement("div");
+      summaryPanel.className = "summary-panel";
+      container.appendChild(summaryPanel);
+    }
+    summaryPanel.style.display = "block";
+    summaryPanel.innerHTML = `<div class="summary-loading">🔄 Generating summary for <strong>${label}</strong>…</div>`;
+
+    try {
+      const res  = await fetch("/summarize", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ filename })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        summaryPanel.innerHTML = `
+          <div class="summary-header">📝 Summary — <strong>${escapeHtml(data.label)}</strong> <span class="summary-badge">${data.chunk_count} chunks</span></div>
+          <div class="summary-body">${renderMarkdown(data.summary)}</div>
+          <button class="summary-close" onclick="this.closest('.summary-panel').style.display='none'">✕ Close</button>
+        `;
+      } else {
+        summaryPanel.innerHTML = `<div style="color:var(--danger)">❌ ${escapeHtml(data.error || "Failed to summarize")}</div>`;
+      }
+    } catch {
+      summaryPanel.innerHTML = `<div style="color:var(--danger)">❌ Could not connect to server.</div>`;
+    }
+
+    btn.textContent = "📝";
+    btn.disabled    = false;
+  });
+});
 
 document.querySelectorAll(".btn-doc-delete").forEach(btn => {
   btn.addEventListener("click", e => {
@@ -408,9 +404,9 @@ let scrollBtn = null;
 // Starter suggestion chips shown at first load
 const STARTER_SUGGESTIONS = [
   { icon: "📖", text: "Summarize the uploaded documents" },
-  { icon: "🔍", text: "What are the key topics covered?" },
-  { icon: "💡", text: "Give me 5 important facts from the docs" },
-  { icon: "❓", text: "What questions can you answer?" },
+  { icon: "🔍", text: "What are the key topics covered in the documents?" },
+  { icon: "💡", text: "Give me 5 important facts from the documents" },
+  { icon: "❓", text: "What questions can you answer from the documents?" },
 ];
 
 if (chatWindow) {
@@ -458,6 +454,38 @@ if (chatWindow) {
 
   insertStarterSuggestions();
 
+  // ── Stop button ───────────────────────────────────────────
+  let stopBtn = null;
+  let activeEventSource = null;
+  let streamStopped = false;
+
+  function showStopBtn() {
+    if (stopBtn) return;
+    stopBtn = document.createElement("button");
+    stopBtn.className = "btn-stop";
+    stopBtn.id = "stopBtn";
+    stopBtn.innerHTML = `⏹ Stop`;
+    stopBtn.title = "Stop generating";
+    stopBtn.addEventListener("click", () => {
+      streamStopped = true;
+      if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+      }
+      hideStopBtn();
+      sendBtn.disabled       = false;
+      questionInput.disabled = false;
+      questionInput.focus();
+    });
+    // Insert before send button
+    const inputWrap = document.querySelector(".input-wrap");
+    if (inputWrap) inputWrap.appendChild(stopBtn);
+  }
+
+  function hideStopBtn() {
+    if (stopBtn) { stopBtn.remove(); stopBtn = null; }
+  }
+
   // ── Send handler ──────────────────────────────────────────
 
   async function sendQuestion() {
@@ -472,33 +500,40 @@ if (chatWindow) {
     questionInput.value  = "";
     sendBtn.disabled     = true;
     questionInput.disabled = true;
+    streamStopped = false;
+    showStopBtn();
 
     const typingId = showTyping();
 
     try {
       await streamAnswer(question, typingId);
     } catch (err) {
-      // Fallback to regular fetch
-      try {
+      if (streamStopped) {
         removeTyping(typingId);
-        const typingId2 = showTyping();
-        const res  = await fetch("/ask", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ question })
-        });
-        const data = await res.json();
-        removeTyping(typingId2);
+      } else {
+        // Fallback to regular fetch
+        try {
+          removeTyping(typingId);
+          const typingId2 = showTyping();
+          const res  = await fetch("/ask", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ question })
+          });
+          const data = await res.json();
+          removeTyping(typingId2);
 
-        if (data.error)    appendBotError(data.error);
-        else if (data.fallback) appendFallback(data.message);
-        else appendAnswer(data.answer, data.source, data.page, data.related_questions || [], data.used_web);
-      } catch (err2) {
-        removeTyping(typingId);
-        appendBotError("Could not connect to server. Make sure backend is running.");
+          if (data.error)    appendBotError(data.error);
+          else if (data.fallback) appendFallback(data.message);
+          else appendAnswer(data.answer, data.source, data.page, data.related_questions || [], data.used_web);
+        } catch (err2) {
+          removeTyping(typingId);
+          appendBotError("Could not connect to server. Make sure backend is running.");
+        }
       }
     }
 
+    hideStopBtn();
     sendBtn.disabled       = false;
     questionInput.disabled = false;
     questionInput.focus();
@@ -509,6 +544,7 @@ if (chatWindow) {
 
   async function streamAnswer(question, typingId) {
     const eventSource = new EventSource(`/ask-stream?question=${encodeURIComponent(question)}`);
+    activeEventSource = eventSource;
 
     return new Promise((resolve, reject) => {
       let answered = false;
@@ -519,6 +555,7 @@ if (chatWindow) {
 
       const timeout = setTimeout(() => {
         eventSource.close();
+        activeEventSource = null;
         if (!answered) reject(new Error("Stream timeout"));
       }, 90000);
 
@@ -528,20 +565,41 @@ if (chatWindow) {
         if (data.done) {
           clearTimeout(timeout);
           eventSource.close();
+          activeEventSource = null;
           if (textEl) textEl.classList.remove("stream-cursor");
 
-          // Source metadata
+          // If stream was stopped mid-way, show a stopped indicator
+          if (data.stopped && textEl && fullText) {
+            const stopNote = document.createElement("span");
+            stopNote.style.cssText = "font-size:0.75rem;color:var(--text-muted);margin-left:6px;";
+            stopNote.textContent = " [stopped]";
+            textEl.appendChild(stopNote);
+          }
+
+          // Source metadata — now shown as small timestamp-line only
           if (cardEl) {
-            const meta = cardEl.querySelector(".stream-meta");
-            if (meta) {
-              const webBadge = data.used_web ? ` <span class="web-badge">🌐 Web</span>` : "";
-              const src = data.source && data.source !== "-" ? `📄 <strong>${escapeHtml(data.source)}</strong> · Page ${data.page}` : "🌐 Web + Wikipedia";
-              meta.innerHTML = `<hr><small>${src}${webBadge}</small>`;
+            const src = data.source && data.source !== "-"
+              ? `📄 <strong>${escapeHtml(data.source)}</strong> · Page ${data.page}`
+              : (data.used_web ? "🌐 Web + Wikipedia" : "");
+            if (src) {
+              const srcEl = document.createElement("div");
+              srcEl.className = "message-time";
+              srcEl.innerHTML = src;
+              wrapEl.querySelector(".message-content").appendChild(srcEl);
             }
           }
 
-          // Related questions (exactly 3)
+          // Timestamp
           if (wrapEl) {
+            const contentEl = wrapEl.querySelector(".message-content");
+            const tsEl = document.createElement("div");
+            tsEl.className = "message-time";
+            tsEl.textContent = getTimestamp();
+            contentEl.appendChild(tsEl);
+          }
+
+          // Related questions (exactly 3) — skip if stopped
+          if (wrapEl && !data.stopped) {
             const contentEl = wrapEl.querySelector(".message-content");
             if (contentEl) {
               const related = data.related_questions || [];
@@ -566,13 +624,12 @@ if (chatWindow) {
             wrapEl.innerHTML = `
               <div class="message-avatar">🤖</div>
               <div class="message-content">
-                <div class="chunk-card">
+                <div class="message-bubble bot-answer-bubble">
                   <div class="stream-text stream-cursor"></div>
-                  <div class="stream-meta"></div>
                 </div>
               </div>`;
             chatWindow.appendChild(wrapEl);
-            cardEl = wrapEl.querySelector(".chunk-card");
+            cardEl = wrapEl.querySelector(".bot-answer-bubble");
             textEl = wrapEl.querySelector(".stream-text");
             scrollToBottom();
           }
@@ -586,6 +643,7 @@ if (chatWindow) {
       eventSource.onerror = () => {
         clearTimeout(timeout);
         eventSource.close();
+        activeEventSource = null;
         if (!answered) reject(new Error("SSE error"));
       };
     });
@@ -606,6 +664,7 @@ if (chatWindow) {
       <div class="message-avatar">👤</div>
       <div class="message-content">
         <div class="message-bubble">${escapeHtml(text)}</div>
+        <div class="message-time">${getTimestamp()}</div>
       </div>`;
     chatWindow.appendChild(msg);
     scrollToBottom();
@@ -629,7 +688,6 @@ if (chatWindow) {
     bar.className = "message-actions";
     bar.innerHTML = `
       <button class="action-btn copy-btn" title="Copy answer">📋 Copy</button>
-      <button class="action-btn" title="Ask again" onclick="this.closest('.message').remove()">🔄 Retry</button>
     `;
     bar.querySelector(".copy-btn").addEventListener("click", function() {
       navigator.clipboard.writeText(answerText).then(() => {
@@ -642,18 +700,20 @@ if (chatWindow) {
   }
 
   function appendAnswer(answer, source, page, relatedQuestions = [], usedWeb = false) {
-    const webBadge = usedWeb ? `<span class="web-badge">🌐 Web</span>` : "";
+    const srcLine = source && source !== "-"
+      ? `📄 <strong>${escapeHtml(source)}</strong> · Page ${page}`
+      : (usedWeb ? "🌐 Web + Wikipedia" : "");
 
     const wrap = document.createElement("div");
     wrap.className = "message bot-message";
     wrap.innerHTML = `
       <div class="message-avatar">🤖</div>
       <div class="message-content">
-        <div class="chunk-card">
+        <div class="message-bubble bot-answer-bubble">
           ${renderMarkdown(answer)}
-          <hr>
-          <small>📄 <strong>${escapeHtml(source)}</strong> · Page ${page} ${webBadge}</small>
         </div>
+        ${srcLine ? `<div class="message-time">${srcLine}</div>` : ""}
+        <div class="message-time">${getTimestamp()}</div>
       </div>`;
 
     const contentEl = wrap.querySelector(".message-content");
